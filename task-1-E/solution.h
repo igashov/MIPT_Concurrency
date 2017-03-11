@@ -12,10 +12,10 @@
 #include <vector>
 
 // Power function for integers.
-size_t pow(size_t base, size_t degree)
+int Pow(int base, int degree)
 {
-    size_t result = 1;
-    for (size_t i = 0; i < degree; ++i) {
+    int result = 1;
+    for (int i = 0; i < degree; ++i) {
         result *= base;
     }
     return result;
@@ -25,9 +25,9 @@ size_t pow(size_t base, size_t degree)
 // Works like ceil(log2(arg)) from <cmath>:
 // if arg is a precise degree of 2 (variable flag indicates it) then the result will be precise too,
 // else the result will be rounded up.
-size_t log2(size_t arg) {
+int Log2(int arg) {
     bool flag = false;
-    size_t base = 0;
+    int base = 0;
     while (arg >> 1 != 0) {
         if ((arg & 1) != 0) {
             flag = true;
@@ -41,9 +41,7 @@ size_t log2(size_t arg) {
 
 class PetersonMutex {
 public:
-    PetersonMutex():
-    victim_(0)
-    {
+    PetersonMutex(): victim_(0) {
         want_[0].store(false);
         want_[1].store(false);
     }
@@ -67,12 +65,10 @@ private:
 
 class TreeMutex {
 public:
-    TreeMutex(size_t n_threads):
-    leafs_num_(pow(2, log2(n_threads))),
-    height_(log2(leafs_num_)),
-    peterson_mtx_(leafs_num_ - 1)
-    {
-    }
+    explicit TreeMutex(size_t n_threads)
+        : leafs_num_(Pow(2, Log2(n_threads))),
+          height_(Log2(leafs_num_)),
+          peterson_mtx_(leafs_num_ - 1) {}
     
     // In order to lock the TreeMutex, current_thread has to reach the root of the tree going through
     // Peterson mutexes - nodes on the path in the tree.
@@ -99,7 +95,7 @@ public:
                 int digit = ((current_thread & (1 << level)) == 0) ? 0 : 1;
                 bool peterson_mtx_th_id = 1 - digit;
                 peterson_mtx_[mtx].unlock(peterson_mtx_th_id);
-                mtx = mtx * 2 + pow(2, digit);
+                mtx = mtx * 2 + Pow(2, digit);
             }
             locked_thread_.store(leafs_num_);
         }
@@ -114,3 +110,4 @@ private:
     std::vector<PetersonMutex> peterson_mtx_;
     std::atomic<size_t> locked_thread_;
 };
+
