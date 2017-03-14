@@ -6,14 +6,13 @@
 //  Copyright (c) 2017 Igashov_Ilya. All rights reserved.
 //
 
+#include <array>
 #include <atomic>
 #include <thread>
-#include <array>
 #include <vector>
 
 // Power function for integers.
-int Pow(int base, int degree)
-{
+int Pow(int base, int degree) {
     int result = 1;
     for (int i = 0; i < degree; ++i) {
         result *= base;
