@@ -17,25 +17,24 @@ class CyclicBarrier {
  public:
   explicit CyclicBarrier(size_t num_threads)
       : n_threads_(num_threads),
-        counter_(2),
+        counter_of_waiting_threads_(2),
         current_epoche_(0) {}
   
+  // If thread calls this method, it will wait untill all other threads call
+  // this method too and only then this thread (as well as others) will continue.
   void Pass() {
     const int my = current_epoche_.load();
-    if (counter_[my].fetch_add(1) < n_threads_ - 1) {
-      // Lock and wait until all threads won't reach the barrier in this epoche.
+    if (counter_of_waiting_threads_[my].fetch_add(1) < n_threads_ - 1) {
       std::unique_lock<std::mutex> lock(mtx_);
       // Condition in cond_var_.wait args protects from spurious wakeups.
-      cond_var_.wait(lock, [this, &my](){ return counter_[my].load() == n_threads_; });
+      all_threads_arrived_cv_.wait(lock, [this, &my](){ return counter_of_waiting_threads_[my].load() == n_threads_; });
     } else {
-      // If this thread is the last and other threads have already reached the barrier in current epoche,
-      // - switch the epoche over to the next
-      //   (XOR for current_ variable, e.g. if current epoche has number 1, the next epoche will have number 0)
-      // - set to zero the counter of threads in the epoche we swiched over to
-      // - unblock all threads
+      // Switch the current epoche over to the next:
+      // XOR for current_epoche_ variable, e.g. if current epoche has number 1,
+      // the next epoche will have number 0.
       current_epoche_.store(current_epoche_.load() ^ 1);
-      counter_[current_epoche_.load()].store(0);
-      cond_var_.notify_all();
+      counter_of_waiting_threads_[current_epoche_.load()].store(0);
+      all_threads_arrived_cv_.notify_all();
     }
   }
   
@@ -44,11 +43,8 @@ class CyclicBarrier {
   
  private:
   size_t n_threads_;
-  // counter_ is a vector of two counters that count waiting threads. One of these counters
-  // is responsible for current epoche, another one - for the next epoche (it is neseccary for
-  // cyclic property).
-  std::vector<std::atomic<size_t>> counter_;
+  std::vector<std::atomic<size_t>> counter_of_waiting_threads_;
   std::atomic<int> current_epoche_;
-  ConditionVariable cond_var_;
+  ConditionVariable all_threads_arrived_cv_;
   std::mutex mtx_;
 };
