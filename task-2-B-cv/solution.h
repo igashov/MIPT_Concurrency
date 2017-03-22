@@ -6,7 +6,6 @@
 //  Copyright (c) 2017 Igashov_Ilya. All rights reserved.
 //
 
-#include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
