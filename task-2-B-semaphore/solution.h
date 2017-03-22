@@ -38,7 +38,7 @@ class Semaphore {
   std::mutex mtx_;
 };
 
-// Implememtation of ropot using semaphores.
+// Implememtation of Robot using semaphores.
 class Robot {
  public:
   void StepLeft() {
