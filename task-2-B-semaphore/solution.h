@@ -14,26 +14,26 @@
 // Implementation of semaphore.
 class Semaphore {
  public:
-  Semaphore(): signals_counter_(0) {}
+  Semaphore() : signals_counter_(0) {}
   
   // Thread will wait untill there is at least one signal.
   void wait() {
     std::unique_lock<std::mutex> lock(mtx_);
-    if (signals_counter_.load() == 0) {
+    if (signals_counter_ == 0) {
       get_signal_cv_.wait(lock, [this](){ return signals_counter_ > 0; });
     }
-    signals_counter_.fetch_sub(1);
+    --signals_counter_;
   }
   
   // Sends another signal that means that signals_counter_ increments.
   void signal() {
     std::unique_lock<std::mutex> lock(mtx_);
-    signals_counter_.fetch_add(1);
-    get_signal_cv_.notify_all();
+    ++signals_counter_;
+    get_signal_cv_.notify_one();
   }
   
  private:
-  std::atomic<size_t> signals_counter_;
+  size_t signals_counter_;
   std::condition_variable get_signal_cv_;
   std::mutex mtx_;
 };
