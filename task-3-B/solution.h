@@ -106,9 +106,8 @@ class ThreadPool {
   ThreadPool& operator=(const ThreadPool&) = delete;
   
   ~ThreadPool() {
-    Shutdown();
-    for(std::thread &worker: workers_) {
-      worker.join();
+    if (!shutted_) {
+      Shutdown();
     }
   }
   
@@ -125,6 +124,9 @@ class ThreadPool {
   void Shutdown() {
     shutted_ = true;
     tasks_.Shutdown();
+    for(std::thread &worker: workers_) {
+      worker.join();
+    }
   }
   
  private:
@@ -133,13 +135,9 @@ class ThreadPool {
   }
   
   static void thread_initialization(ThreadPool* me) {
-    while(true) {
-      std::packaged_task<T()> task;
-      if (me->tasks_.Get(task)) {
-        task();
-      } else {
-        break;
-      }
+    std::packaged_task<T()> task;
+    while (me->tasks_.Get(task)) {
+      task();
     }
   }
   
