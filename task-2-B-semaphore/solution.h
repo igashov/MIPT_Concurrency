@@ -14,46 +14,44 @@
 // Implementation of semaphore.
 class Semaphore {
  public:
-  Semaphore() : signals_counter_(0) {}
+  Semaphore(): signals_counter_(0) {}
   
-  // Thread will wait untill there is at least one signal.
-  void wait() {
+  void Wait() {
     std::unique_lock<std::mutex> lock(mtx_);
-    if (signals_counter_ == 0) {
-      get_signal_cv_.wait(lock, [this](){ return signals_counter_ > 0; });
+    if (signals_counter_.load() == 0) {
+      get_signal_cv_.wait(lock, [this](){ return signals_counter_ > 0;});
     }
-    --signals_counter_;
+    signals_counter_.fetch_sub(1);
   }
   
-  // Sends another signal that means that signals_counter_ increments.
-  void signal() {
+  void Signal() {
     std::unique_lock<std::mutex> lock(mtx_);
-    ++signals_counter_;
-    get_signal_cv_.notify_one();
+    signals_counter_.fetch_add(1);
+    get_signal_cv_.notify_all();
   }
   
  private:
-  size_t signals_counter_;
+  std::atomic<size_t> signals_counter_;
   std::condition_variable get_signal_cv_;
   std::mutex mtx_;
 };
 
-// Implememtation of Robot using semaphores.
+// Implememtation of ropot using semaphores.
 class Robot {
  public:
   void StepLeft() {
-    left_semaphore_.wait();
     std::cout << "left" << std::endl;
-    right_semaphore_.signal();
+    right_semaphore.Signal();
+    left_semaphore_.Wait();
   }
   
   void StepRight() {
-    left_semaphore_.signal();
-    right_semaphore_.wait();
+    right_semaphore.Wait();
     std::cout << "right" << std::endl;
+    left_semaphore_.Signal();
   }
   
  private:
   Semaphore left_semaphore_;
-  Semaphore right_semaphore_;
+  Semaphore right_semaphore;
 };
