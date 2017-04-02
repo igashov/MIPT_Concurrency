@@ -14,7 +14,7 @@
 // Implementation of semaphore.
 class Semaphore {
  public:
-  Semaphore() : signals_counter_(0) {}
+  Semaphore(const size_t start = 0) : signals_counter_(start) {}
   
   // Thread will wait untill there is at least one signal.
   void Wait() {
@@ -42,9 +42,9 @@ class Semaphore {
 class Robot {
  public:
   void StepLeft() {
+    left_semaphore_.Wait();
     std::cout << "left" << std::endl;
     right_semaphore_.Signal();
-    left_semaphore_.Wait();
   }
   
   void StepRight() {
@@ -54,6 +54,6 @@ class Robot {
   }
   
  private:
-  Semaphore left_semaphore_;
+  Semaphore left_semaphore_{1};
   Semaphore right_semaphore_;
 };
